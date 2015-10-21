@@ -1,0 +1,18 @@
+{
+  "name": "haraka-plugins",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "node ./run_tests",
+    "test2": "node_modules/.bin/jasmine-node --coffee .build_test"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jasmine-node": "^1.14.5",
+    "rewire": "^2.3.4",
+    "Haraka": "^2.7.0",
+    "coffee-script": "^1.10.0",
+    "fs-jetpack": "^0.7.0"
+  }
+}

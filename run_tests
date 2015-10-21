@@ -1,0 +1,68 @@
+#!/usr/bin/env node
+'use strict';
+
+var path = require('path');
+var jetpack = require('fs-jetpack');
+var jasmine = require('jasmine-node');
+
+process.env.HARAKA = path.dirname(require.resolve("Haraka"));
+
+if (! process.env.HARAKA) {
+  console.log('Haraka installation not found. Try npm install');
+  return false;
+}
+
+// publish haraka dependencies
+try {
+  require.paths.push(path.join(process.env.HARAKA, 'node_modules'));
+}
+catch (e) {
+  process.env.NODE_PATH = process.env.NODE_PATH ?
+    (process.env.NODE_PATH + ':' + path.join(process.env.HARAKA, 'node_modules'))
+    :
+    (path.join(process.env.HARAKA, 'node_modules'));
+  require('module')._initPaths(); // Horrible hack
+}
+
+var parent = jetpack;
+var harakaDir = jetpack.cwd(process.env.HARAKA);
+var buildDir = parent.dir('.build_test');
+var testDir = parent.cwd('spec');
+
+jetpack.copy(harakaDir.path(), buildDir.path(), {overwrite: true, matching: './*.js'});
+jetpack.copy(testDir.path(), buildDir.path(), {overwrite: true, matching: ['*spec.coffee', '*spec.js']});
+jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./*.js']});
+
+var jasmineOptions = {
+  specFolders: [ buildDir.path() ],
+  isVerbose: false,
+  showColors: true,
+  teamcity: false,
+  useRequireJs: false,
+  regExpSpec: /.spec\.(js|coffee|litcoffee)$/i,
+  junitreport: {
+    report: false,
+    savePath: './reports/',
+    useDotNotation: true,
+    consolidate: true
+  },
+  includeStackTrace: true,
+  growl: false
+};
+
+jasmineOptions.onComplete = function() {
+  jetpack.remove(buildDir.path());
+};
+
+try {
+  require('coffee-script/register'); // support CoffeeScript >=1.7.0
+} catch ( e ) {
+  require('coffee-script'); // support CoffeeScript <=1.6.3
+}
+
+try {
+  jasmine.executeSpecsInFolder(jasmineOptions);
+} catch (e) {
+  jasmineOptions.onComplete(e);
+  throw e;
+}
