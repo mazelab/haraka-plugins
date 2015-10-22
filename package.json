@@ -14,5 +14,8 @@
     "Haraka": "^2.7.0",
     "coffee-script": "^1.10.0",
     "fs-jetpack": "^0.7.0"
+  },
+  "dependencies": {
+    "mysql": "^2.9.0"
   }
 }

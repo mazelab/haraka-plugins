@@ -1,6 +1,17 @@
 var mysql = require('mysql');
 var Address = require('./address.js').Address;
 
+var mysqlConnection = null;
+var mysqlDefault = {
+    main: {
+        host: 'localhost',
+        port: 3306,
+        char_set: 'UTF8_GENERAL_CI',
+        ssl: false,
+        alias_query: "SELECT * FROM aliases WHERE email = '%u'"
+    }
+};
+
 exports.register = function () {
     this.inherits("queue/discard");
     this.register_hook("rcpt", "aliases_mysql");
@@ -8,13 +19,12 @@ exports.register = function () {
 
 exports.aliases_mysql = function (next, connection, params) {
     var rcpt = params && params[0].address();
-    if(!connection.transaction.notes.local_sender){
+    if (!connection.transaction.notes.local_sender) {
         return next()
     }
 
-    this.init_mysql(connection);
-    this.get_forwarder_by_email(connection, rcpt, function(error, forwarder){
-        if (error){
+    this.getAliasByEmail(connection, rcpt, function (error, forwarder) {
+        if (error) {
             connection.logdebug(exports, "Error: " + error.message);
             return next();
         }
@@ -35,31 +45,32 @@ exports.aliases_mysql = function (next, connection, params) {
     });
 };
 
-exports.get_forwarder_by_email = function(connection, email, cb){
-    var notes = server.notes.aliases_mysql;
-    var query = notes.config.main.alias_query.replace(/%u/g, email);
+exports.getAliasByEmail = function (connection, email, callback) {
+    var config = this.config.get('aliases_mysql.ini', 'ini') || mysqlDefault;
+    if (!config.main.alias_query) config.main.alias_query = mysqlDefault.main.alias_query;
 
-    notes.pool.connect(function(error, conn) {
-        if (error) return cb(error);
+    this.connectMysql(connection, config.main, function (err, mysqlConnection) {
+        if (err) return callback(err);
 
+        var query = config.main.alias_query.replace(/%u/g, email);
         connection.logdebug(exports, 'exec query: ' + query);
-        conn.query(query, [], function(error, results) {
-            if (error) return cb(error);
-            if (results[0] && results[0].address === email) {
-                return cb(null, results[0]);
+        mysqlConnection.query(query, [], function (error, result) {
+            if (error) return callback(error);
+            if (!result[0] || result[0].address !== email) {
+                callback(new Error("No alias entry for " + email));
             }
 
-            cb(new Error("No forwarder entry for "+ email));
+            return callback(null, result[0]);
         });
     });
 };
 
-exports.drop = function(connection, rcpt) {
+exports.drop = function (connection, rcpt) {
     connection.logdebug(exports, "marking " + rcpt + " for drop");
     connection.transaction.notes.discard = true;
 };
 
-exports.alias = function(connection, rcpt, forwarder) {
+exports.alias = function (connection, rcpt, forwarder) {
     if (forwarder === null || !forwarder.aliases || forwarder.aliases.length === 0) {
         connection.loginfo(exports, 'alias failed for ' + rcpt + ', no "to" field in alias config');
         return false;
@@ -69,53 +80,44 @@ exports.alias = function(connection, rcpt, forwarder) {
     connection.relaying = true;
 
     var aliases = forwarder.aliases.split("|");
-    for(var index=0; index < aliases.length; index++){
+    for (var index = 0; index < aliases.length; index++) {
         connection.logdebug(exports, "aliasing " + rcpt + " to " + aliases[index]);
         connection.transaction.rcpt_to.push(new Address('<' + aliases[index] + '>'));
     }
 };
 
-exports.init_mysql = function(connection){
-    if (!server.notes.aliases_mysql || !server.notes.aliases_mysql.pool) {
-        var config = exports.config.get('aliases_mysql.ini', {
-            host: 'localhost',
-            port: 3306,
-            char_set: 'UTF8_GENERAL_CI',
-            ssl: false,
-            alias_query: "SELECT * FROM aliases WHERE email = '%u'"
-        });
+exports.connectMysql = function (connection, config, callback) {
+    if (mysqlConnection) return callback(null, mysqlConnection);
 
-        var connect = function(callback) {
-            var self = this;
-            if (self.connection === undefined){
-                self.pool = mysql.createPool({
-                    host : config.main.host,
-                    port : config.main.port,
-                    charset: config.main.charset,
-                    user : config.main.user,
-                    password: config.main.password,
-                    database: config.main.database
-                }).getConnection(function(error, conn){
-                    self.connection = conn;
-                    callback(error, self.connection);
-                });
-
-                return;
-            }
-
-
-            return callback(null, self.connection);
-        };
-
-        server.notes.aliases_mysql = {
-            config: config,
-            pool  : {connect: connect}
-        };
-    }
+    var conn = mysql.createConnection({
+        host: config.host || 'localhost',
+        port: config.port || '3306',
+        charset: config.charset || 'UTF8_GENERAL_CI',
+        user: config.user,
+        password: config.password,
+        database: config.database
+    });
 
     connection.logdebug(exports,
-            'MySQL host="' + server.notes.aliases_mysql.config.main.host + '"' +
-            ' port="' + server.notes.aliases_mysql.config.main.port + '"' +
-            ' user="' + server.notes.aliases_mysql.config.main.user + '"' +
-            ' database="' + server.notes.aliases_mysql.config.main.database+ '"');
+        'MySQL host="' + config.host + '"' +
+        ' port="' + config.port + '"' +
+        ' user="' + config.user + '"' +
+        ' database="' + config.database + '"');
+
+    conn.connect(function (err) {
+        if (err) return callback(err);
+
+        // reset connection on error
+        conn.on('error', function (err) {
+            connection.logdebug(exports, new Date() + ' mysql connection error: ' + err.message);
+            if (mysqlConnection) {
+                connection.logdebug('resetting connection');
+                mysqlConnection.end();
+                mysqlConnection = null;
+            }
+        });
+
+        mysqlConnection = conn;
+        return callback(null, mysqlConnection);
+    });
 };
