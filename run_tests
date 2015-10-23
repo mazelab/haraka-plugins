@@ -31,7 +31,7 @@ var testDir = parent.cwd('spec');
 
 jetpack.copy(harakaDir.path(), buildDir.path(), {overwrite: true, matching: './*.js'});
 jetpack.copy(testDir.path(), buildDir.path(), {overwrite: true, matching: ['*spec.coffee', '*spec.js']});
-jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./*.js']});
+jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./*.js', './package.json']});
 
 var jasmineOptions = {
   specFolders: [ buildDir.path() ],
@@ -50,8 +50,14 @@ var jasmineOptions = {
   growl: false
 };
 
-jasmineOptions.onComplete = function() {
+var exitCode = 0;
+
+jasmineOptions.onComplete = function(runner) {
   jetpack.remove(buildDir.path());
+  if (runner.results().failedCount != 0) {
+    exitCode = 1;
+  }
+  process.exit(exitCode);
 };
 
 try {

@@ -93,101 +93,85 @@ describe "get alias by email", ->
     plugin.config =
       get: jasmine.createSpy('get').andCallFake () ->
         main:
-          host: 'localhost',
-          port: 3306,
-          char_set: 'UTF8_GENERAL_CI',
-          ssl: false,
-          alias_query: "SELECT * FROM aliases WHERE email = '%u'"
+          query: 'SELECT * FROM aliases WHERE email = "%u"'
     connection =
       transaction:
         notes:
           local_sender: true
+      server:
+        notes:
+          mysql_provider:
+            query: jasmine.createSpy('mysql_provider.query').andCallFake (query, callback) ->
+              callback null, [{address: "test@test.dev", action: "alias", aliases: "test2@test.dev|test3@test.dev"}]
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
 
-  it "should load config", ->
-    spyOn(plugin, "connectMysql").andCallFake () ->
+  it "should fail when mysql provider is not initialized", (done) ->
+    delete connection.server.notes.mysql_provider
+
+    plugin.getAliasByEmail connection, 'test@test.dev', (err) ->
+      expect(err).toEqual(new Error 'mysql provider seems mot initialized')
+      done()
+
+  it "should load config", (done) ->
+    plugin.getAliasByEmail connection, 'test@test.dev', () ->
+      expect(plugin.config.get).toHaveBeenCalledWith('aliases_mysql.ini', 'ini');
+      done()
+
+  it "should use configured query", (done) ->
+    expectedQuery = 'SELECT * FROM aliases WHERE email = "test@test.dev"';
 
     plugin.getAliasByEmail connection, 'test@test.dev', () ->
-    expect(plugin.config.get).toHaveBeenCalled();
+      expect(connection.server.notes.mysql_provider.query).toHaveBeenCalledWith(expectedQuery ,jasmine.any(Function));
+      done()
 
-  it "should set default config if config file failed to load", ->
-    plugin.config.get = jasmine.createSpy('get').andCallFake () ->
-    spyOn(plugin, "connectMysql").andCallFake () ->
+  it "should set default query when query is not configured", (done) ->
+    plugin.config.get = jasmine.createSpy('get').andCallFake () -> return {main:{}}
 
-    plugin.getAliasByEmail connection, 'test@test.dev', () ->
-    expect(plugin.connectMysql).toHaveBeenCalledWith(jasmine.any(Object), plugin.__get__('mysqlDefault').main, jasmine.any(Function));
-
-  it "should set default alias_query when alias_query is not configured", ->
-    configDefault =  plugin.__get__('mysqlDefault')
-    configWithoutQuery =  plugin.__get__('mysqlDefault')
-    delete configWithoutQuery.main.alias_query
-
-    plugin.config.get = jasmine.createSpy('get').andCallFake () -> configWithoutQuery
-    spyOn(plugin, "connectMysql").andCallFake () ->
+    expectedQuery = 'SELECT address, action, aliases FROM forwarder WHERE address = "test@test.dev"';
 
     plugin.getAliasByEmail connection, 'test@test.dev', () ->
-    expect(plugin.connectMysql).toHaveBeenCalledWith(jasmine.any(Object), configDefault.main, jasmine.any(Function));
+      expect(connection.server.notes.mysql_provider.query).toHaveBeenCalledWith(expectedQuery ,jasmine.any(Function));
+      done()
 
-  it "should call connectMysql with the correct parameters", ->
-    spyOn(plugin, "connectMysql").andCallFake () ->
+  it "should fail on query error", (done) ->
+    error = new Error 'fail callback'
 
-    plugin.getAliasByEmail connection, 'test@test.dev', () ->
-    expect(plugin.connectMysql).toHaveBeenCalledWith(connection, plugin.config.get().main, jasmine.any(Function));
+    connection.server.notes.mysql_provider.query = jasmine.createSpy('mysql_provider')
+    .andCallFake (query, callback) -> return callback error
 
-  it "should call callback with error on connection error", ->
-    callbackSpy = jasmine.createSpy().andCallFake () ->
+    plugin.getAliasByEmail connection, 'test@test.dev', (err) ->
+      expect(err).toBe(error)
+      done()
 
-    spyOn(plugin, "connectMysql").andCallFake (connection, config, cb) -> return cb new Error 'fail callback'
+  it "should fail when query result is empty", (done) ->
+    connection.server.notes.mysql_provider.query = jasmine.createSpy('mysql_provider')
+    .andCallFake (query, callback) -> return callback null, []
 
-    plugin.getAliasByEmail connection, 'test@test.dev', callbackSpy
-    expect(callbackSpy).toHaveBeenCalledWith(new Error 'fail callback')
+    plugin.getAliasByEmail connection, 'test@test.dev', (err) ->
+      expect(err).toBeTruthy()
+      done()
 
-  it "should call mysqlConnection.query with correct email", ->
-    querySpy = jasmine.createSpy('queryCallback').andCallFake (query, params, cb) ->
+  it "should fail when query result has no address", (done) ->
+    connection.server.notes.mysql_provider.query = jasmine.createSpy('mysql_provider')
+    .andCallFake (query, callback) -> return callback null, [{"address": ""}]
 
-    spyOn(plugin, "connectMysql").andCallFake (connection, config, cb) -> cb null, {
-      query: querySpy
-    }
+    plugin.getAliasByEmail connection, 'test@test.dev', (err) ->
+      expect(err).toBeTruthy()
+      done()
 
-    plugin.getAliasByEmail connection, 'test@test.dev', () ->
-    expect(querySpy).toHaveBeenCalledWith("SELECT * FROM aliases WHERE email = 'test@test.dev'", [], jasmine.any(Function))
+  it "should fail when query result has a different address", (done) ->
+    connection.server.notes.mysql_provider.query = jasmine.createSpy('mysql_provider')
+    .andCallFake (query, callback) -> return callback null, [{"address": "test2@test.dev"}]
 
-    plugin.getAliasByEmail connection, 'dev@sample.com', () ->
-    expect(querySpy).toHaveBeenCalledWith("SELECT * FROM aliases WHERE email = 'dev@sample.com'", [], jasmine.any(Function))
+    plugin.getAliasByEmail connection, 'test@test.dev', (err) ->
+      expect(err).toBeTruthy()
+      done()
 
-  it "should call callback with error on alias query error", ->
-    querySpy = jasmine.createSpy('queryCallback').andCallFake (query, params, cb) -> return cb new Error 'fail callback'
-    callbackSpy = jasmine.createSpy('callback').andCallFake () ->
-
-    spyOn(plugin, "connectMysql").andCallFake (connection, config, cb) -> cb null, {
-      query: querySpy
-    }
-
-    plugin.getAliasByEmail connection, 'test@test.dev', callbackSpy
-    expect(callbackSpy).toHaveBeenCalledWith(new Error 'fail callback')
-
-  it "should call callback with correct results", ->
-    querySpy = jasmine.createSpy('queryCallback').andCallFake (query, params, cb) -> return cb(null, [{address: "test@test.dev", action: "drop"}])
-    callbackSpy = jasmine.createSpy('callback').andCallFake () ->
-
-    spyOn(plugin, "connectMysql").andCallFake (connection, config, cb) -> cb null, {
-      query: querySpy
-    }
-
-    plugin.getAliasByEmail connection, 'test@test.dev', callbackSpy
-    expect(callbackSpy).toHaveBeenCalledWith(null, {address: "test@test.dev", action: "drop"})
-
-  it "should call callback with error when alias address does not match given address", ->
-    querySpy = jasmine.createSpy('queryCallback').andCallFake (query, params, cb) -> return cb(null, [{address: "test2@test.dev", action: "drop"}])
-    callbackSpy = jasmine.createSpy('callback').andCallFake () ->
-
-    spyOn(plugin, "connectMysql").andCallFake (connection, config, cb) -> cb null, {
-      query: querySpy
-    }
-
-    plugin.getAliasByEmail connection, 'test@test.dev', callbackSpy
-    expect(callbackSpy).toHaveBeenCalledWith(new Error("No alias entry for test@test.dev"))
+  it "should call callback with correct results", (done) ->
+    plugin.getAliasByEmail connection, 'test@test.dev', (err, result) ->
+      expect(result).toEqual({address: "test@test.dev", action: "alias", aliases: "test2@test.dev|test3@test.dev"})
+      done()
 
 
 describe "drop", ->
@@ -237,112 +221,3 @@ describe "alias", ->
   it "should set relaying flag", ->
     plugin.alias connection, 'test@test.dev', {aliases: "test2@test.dev|test3@test.dev"}
     expect(connection.relaying).toBeTruthy();
-
-
-describe "connectMysql", ->
-  config =
-
-  beforeEach ->
-    plugin = rewire "./aliases_mysql.js"
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: jasmine.createSpy('connect').andCallFake (callback) -> return callback null, true
-        on: jasmine.createSpy('on').andCallFake () ->
-    config =
-      host: 'localhost',
-      port: 3306,
-      char_set: 'UTF8_GENERAL_CI',
-      ssl: false,
-      alias_query: "SELECT * FROM aliases WHERE email = '%u'"
-    connection =
-      transaction:
-        notes:
-          local_sender: true
-          discard: false
-        rcpt_to: [new Address "test@test.dev"]
-      logdebug: () -> jasmine.createSpy('logdebug')
-      loginfo: () -> jasmine.createSpy('loginfo')
-
-  it "should return existing mysql connection in callback", (done) ->
-    plugin.__set__ 'mysqlConnection', {"one": "two"}
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(connection).toEqual({"one": "two"})
-      done()
-
-  it "should call mysql.createConnection function", (done) ->
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(plugin.__get__('mysql').createConnection).toHaveBeenCalled()
-      done()
-
-  it "should call connection.connect function", (done) ->
-    connectionCaller = jasmine.createSpy('connect').andCallFake (callback) -> return callback null, true
-
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: connectionCaller
-        on: jasmine.createSpy('on').andCallFake () ->
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(connectionCaller).toHaveBeenCalled()
-      done()
-
-  it "should set on error callback on connection", (done) ->
-    onCaller = jasmine.createSpy('connect').andCallFake () ->
-
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: jasmine.createSpy('connect').andCallFake (callback) -> return callback null, true
-        on: onCaller
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(onCaller).toHaveBeenCalledWith('error', jasmine.any(Function))
-      done()
-
-  it "should fail when connection.connect fails", (done) ->
-    connectionCaller = jasmine.createSpy('connect').andCallFake (callback) -> return callback new Error 'error'
-
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: connectionCaller
-        on: jasmine.createSpy('on').andCallFake () ->
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(err).toEqual(new Error 'errors')
-      done()
-
-  it "should set connection property", (done) ->
-    plugin.connectMysql connection, config, (err, connection) ->
-      expect(plugin.__get__ "mysqlConnection").toBeTruthy()
-      done()
-
-  it "should run connect only one time", (done) ->
-    connectionCaller = jasmine.createSpy('connect').andCallFake (callback) -> return callback null, true
-
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: connectionCaller
-        on: jasmine.createSpy('on').andCallFake () ->
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      plugin.connectMysql connection, config, (err, connection) ->
-        plugin.connectMysql connection, config, (err, connection) ->
-          expect(connectionCaller.callCount).toBe(1)
-          done()
-
-  it "should call connection.end and resets connection after a mysql connection error occurred", (done) ->
-    endCaller = jasmine.createSpy('end').andCallFake () ->
-
-    plugin.__set__ 'mysql',
-      createConnection: jasmine.createSpy('createConnection').andCallFake () ->
-        connect: jasmine.createSpy('connect').andCallFake (callback) -> return callback null, true
-        end: endCaller
-        on: jasmine.createSpy('on').andCallFake (event, callback) ->
-          this.onError = callback if(event == 'error')
-        onError: () ->
-
-    plugin.connectMysql connection, config, (err, connection) ->
-      connection.onError ('some error')
-      expect(endCaller).toHaveBeenCalled()
-      expect(plugin.__get__ "mysqlConnection").toBeFalsy()
-      done()
