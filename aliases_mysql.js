@@ -28,7 +28,7 @@ exports.aliases_mysql = function (next, connection, params) {
                 next(OK);
                 break;
             default:
-                connection.loginfo(exports, "unknown action: " + result.action);
+                connection.logwarn(exports, "unknown action: " + result.action);
                 next();
         }
     });

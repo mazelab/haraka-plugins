@@ -44,6 +44,7 @@ describe "aliases mysql", ->
           local_sender: true
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
+      logwarn: () -> jasmine.createSpy('logwarn')
 
   it "should call 'getAliasByEmail' with correct parameters", ->
     plugin.aliases_mysql(next, connection, params);
@@ -134,7 +135,7 @@ describe "get alias by email", ->
     plugin.config =
       get: jasmine.createSpy('get').andCallFake () ->
         main:
-          query: 'SELECT * FROM aliases WHERE email = "%u"'
+          query: 'SELECT * FROM aliases WHERE address = "%u"'
     connection =
       transaction:
         notes:
@@ -160,7 +161,7 @@ describe "get alias by email", ->
       done()
 
   it "should use configured query", (done) ->
-    expectedQuery = 'SELECT * FROM aliases WHERE email = "test@test.dev"';
+    expectedQuery = 'SELECT * FROM aliases WHERE address = "test@test.dev"';
 
     plugin.getAliasByEmail connection, new Address('test@test.dev'), () ->
       expect(connection.server.notes.mysql_provider.query).toHaveBeenCalledWith(expectedQuery ,jasmine.any(Function));
