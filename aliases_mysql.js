@@ -7,7 +7,9 @@ exports.register = function () {
 };
 
 exports.aliases_mysql = function (next, connection, params) {
-    if (!connection.transaction.notes.local_sender || !params || !params[0]) return next();
+    //@todo why connection.transaction.notes.local_sender ???
+    //if (!connection.transaction.notes.local_sender || !params || !params[0]) return next();
+    if (!params || !params[0]) return next();
 
     var address = params[0];
     this.getAliasByEmail(connection, address, function (error, result) {
@@ -39,6 +41,8 @@ exports.getAliasByEmail = function (connection, address, callback) {
     if (!cfg.query) return callback(new Error('no query configured'));
 
     var query = cfg.query.replace(/%d/g, address.host).replace(/%n/g, address.user).replace(/%u/g, address.address());
+
+    connection.logdebug(exports, "exec query: " + query);
 
     connection.server.notes.mysql_provider.query(query, function (err, result) {
         if (err) return callback(err);
