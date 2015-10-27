@@ -7,45 +7,42 @@ exports.register = function () {
 };
 
 exports.aliases_mysql = function (next, connection, params) {
-    var rcpt = params && params[0].address();
-    if (!connection.transaction.notes.local_sender) {
-        return next()
-    }
+    if (!connection.transaction.notes.local_sender || !params || !params[0]) return next();
 
-    this.getAliasByEmail(connection, rcpt, function (error, result) {
-        if (error) {
-            connection.logdebug(exports, "Error: " + error.message);
+    var address = params[0];
+    this.getAliasByEmail(connection, address, function (error, result) {
+        if (error || !result || !result.action || !result.address || result.address !== address.address()) {
+            if (error) connection.logdebug(exports, "Error: " + error.message);
             return next();
         }
 
         switch (result.action.toLowerCase()) {
             case "drop":
-                exports.drop(connection, rcpt);
+                exports.drop(connection, address.address());
                 next(DENY);
                 break;
             case "alias":
-                exports.alias(connection, rcpt, result);
+                exports.alias(connection, address.address(), result);
                 next(OK);
                 break;
             default:
                 connection.loginfo(exports, "unknown action: " + result.action);
-                next()
+                next();
         }
     });
 };
 
-exports.getAliasByEmail = function (connection, email, callback) {
-    if(!connection.server.notes.mysql_provider) return callback(new Error('mysql provider seems mot initialized'));
+exports.getAliasByEmail = function (connection, address, callback) {
+    if (!connection.server.notes.mysql_provider) return callback(new Error('mysql provider seems mot initialized'));
 
     var cfg = this.config.get('aliases_mysql.ini', 'ini').main || {};
-    if (!cfg.query) cfg.query = 'SELECT address, action, aliases FROM forwarder WHERE address = "%u"';
+    if (!cfg.query) return callback(new Error('no query configured'));
 
-    var query = cfg.query.replace(/%u/g, email);
-    connection.server.notes.mysql_provider.query(query, function(err, result) {
+    var query = cfg.query.replace(/%d/g, address.host).replace(/%n/g, address.user).replace(/%u/g, address.address());
+
+    connection.server.notes.mysql_provider.query(query, function (err, result) {
         if (err) return callback(err);
-        if (!result[0] || result[0].address !== email) {
-            return callback(new Error("No alias entry for " + email));
-        }
+        if (!result || !result[0]) return callback(null, null);
         return callback(null, result[0]);
     });
 };
