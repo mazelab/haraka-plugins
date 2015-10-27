@@ -1,4 +1,3 @@
-var mysql = require('mysql');
 var Address = require('./address.js').Address;
 
 exports.register = function () {

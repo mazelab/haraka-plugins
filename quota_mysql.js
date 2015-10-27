@@ -1,4 +1,3 @@
-var mysql = require('mysql');
 var DSN = require('./dsn');
 
 exports.register = function () {
