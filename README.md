@@ -47,10 +47,24 @@ A collection of plugins which use the mysql provider for haraka.
     #spamassassin
     
     # LOCAL DELIVERY
-    maildir/maildir
+    maildir
     
     # Disconnect client if they spew bad SMTP commands at us
     max_unrecognized_commands
+
+
+#### Example Database
+
+A generic database example: 
+
+    table: users
+    
+    id | email | user | password | domain | uid | gid | gecos | homedir | maildir | bytes | quota
+        
+    
+    table: aliases
+    
+    id | email | action | config
 
 
 ## MySQL provider
@@ -146,7 +160,7 @@ Add quota_mysql into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT quota, bytes FROM users WHERE address = '%u'
+    query = SELECT quota, bytes FROM users WHERE email = '%u'
     
 The query must return the fields quota (in MiB) and bytes (in B).
 
@@ -154,8 +168,8 @@ The query must return the fields quota (in MiB) and bytes (in B).
 
 %u = entire user@domain
 
-    SELECT quota, bytes FROM users WHERE address = '%u'
-    -> SELECT quota, bytes FROM users WHERE address = 'test@test.dev'
+    SELECT quota, bytes FROM users WHERE email = '%u'
+    -> SELECT quota, bytes FROM users WHERE email = 'test@test.dev'
 
 %n = user part of user@domain
 
@@ -199,7 +213,7 @@ Add auth/mysql_cryptmd5 into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT password FROM users WHERE address = '%u'
+    query = SELECT password FROM users WHERE email = '%u'
     
 The query must return the field password (cram md5).
 
@@ -207,8 +221,8 @@ The query must return the field password (cram md5).
 
 %u = entire user@domain
 
-    SELECT password FROM users WHERE address = '%u'
-    -> SELECT password FROM users WHERE address = 'test@test.dev'
+    SELECT password FROM users WHERE email = '%u'
+    -> SELECT password FROM users WHERE email = 'test@test.dev'
 
 %n = user part of user@domain
 
@@ -252,39 +266,39 @@ Add aliases_mysql into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT address, action, config FROM aliases WHERE address = '%u'
+    query = SELECT email, action, config FROM aliases WHERE email = '%u'
     
-The query must return the fields address (string - full email), action (string) and config (string).
+The query must return the fields email, action and config.
 
 #### Query Replacements:
 
 %u = entire user@domain
 
-    SELECT address, action, config FROM aliases WHERE address = '%u'
-    -> SELECT address, action, config FROM aliases WHERE address = 'test@test.dev'
+    SELECT email, action, config FROM aliases WHERE email = '%u'
+    -> SELECT email, action, config FROM aliases WHERE email = 'test@test.dev'
 
 %n = user part of user@domain
 
-    SELECT address, action, config FROM aliases WHERE user = '%n'
-    -> SELECT address, action, config FROM aliases WHERE user = 'test'
+    SELECT email, action, config FROM aliases WHERE user = '%n'
+    -> SELECT email, action, config FROM aliases WHERE user = 'test'
 
 %d = domain part of user@domain
 
-    SELECT address, action, config FROM aliases WHERE domain = '%d'
-    -> SELECT address, action, config FROM aliases WHERE domain = 'test.dev'
+    SELECT email, action, config FROM aliases WHERE domain = '%d'
+    -> SELECT email, action, config FROM aliases WHERE domain = 'test.dev'
 
 ### Examples
 
-    {address: "deny@test.dev", action: "drop", config: ""}
+    {email: "deny@test.dev", action: "drop", config: ""}
     -> denies rcpt
 
-    {address: "deny@test.dev", action: "drop", config: "test2@test.dev"}
+    {email: "deny@test.dev", action: "drop", config: "test2@test.dev"}
     -> denies rcpt
 
-    {address: "test@test.dev", action: "alias", config: "test2@test.dev"}
+    {email: "test@test.dev", action: "alias", config: "test2@test.dev"}
     -> sends email to test2@test.dev
 
-    {address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}
+    {email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}
     -> sends email to test2@test.dev and test3@test.dev
 
 ----
@@ -313,24 +327,24 @@ Add rcpt_to.mysql into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT address FROM users WHERE address = '%u'
+    query = SELECT email FROM users WHERE email = '%u'
     
-The query must return anything. 
+The query must return any value. 
 
 #### Query Replacements:
 
 %u = entire user@domain
 
-    query = SELECT address FROM users WHERE address = '%u'
-    -> SELECT address FROM users WHERE address = 'test@test.dev'
+    query = SELECT email FROM users WHERE email = '%u'
+    -> SELECT email FROM users WHERE email = 'test@test.dev'
 
 %n = user part of user@domain
 
-    query = SELECT address FROM users WHERE user = '%n'
-    -> SELECT address FROM users WHERE user = 'test'
+    query = SELECT email FROM users WHERE user = '%n'
+    -> SELECT email FROM users WHERE user = 'test'
 
 %d = domain part of user@domain
 
-    query = SELECT address FROM users WHERE domain = '%d'
-    -> SELECT address FROM users WHERE domain = 'test.dev'
+    query = SELECT email FROM users WHERE domain = '%d'
+    -> SELECT email FROM users WHERE domain = 'test.dev'
 

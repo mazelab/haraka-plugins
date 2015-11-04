@@ -35,7 +35,7 @@ describe "aliases mysql", ->
     spyOn(plugin, "alias").andCallFake ->
     spyOn(plugin, "drop").andCallFake ->
     spyOn(plugin, "getAliasByEmail").andCallFake (connection, address, callback) ->
-      return callback null, {address: 'test@test.dev', action: "alias", config: "test2@test.dev"}
+      return callback null, {email: 'test@test.dev', action: "alias", config: "test2@test.dev"}
     next = jasmine.createSpy('next')
     params = [ new Address('test@test.dev'), {} ]
     connection =
@@ -66,21 +66,21 @@ describe "aliases mysql", ->
     expect(next).toHaveBeenCalledWith();
 
   it "should call 'drop' and next with correct parameters when alias is set to drop", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {address: 'test@test.dev', action: "drop"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "drop"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(plugin.drop).toHaveBeenCalledWith(connection, params[0].address());
     expect(next).toHaveBeenCalledWith(DENY);
 
   it "should call 'alias' and next with correct parameters when alias is set to alias", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {address: 'test@test.dev', action: "alias"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "alias"}
 
     plugin.aliases_mysql(next, connection, params);
-    expect(plugin.alias).toHaveBeenCalledWith(connection, params[0].address(), {address: 'test@test.dev', action: "alias"});
+    expect(plugin.alias).toHaveBeenCalledWith(connection, params[0].address(), {email: 'test@test.dev', action: "alias"});
     expect(next).toHaveBeenCalledWith(OK);
 
   it "should call next when alias action is unknown", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {address: 'test@test.dev', action: "unknown"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "unknown"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(next).toHaveBeenCalledWith();
@@ -103,7 +103,7 @@ describe "aliases mysql", ->
 
   it "should only call next when query result has no action property", ->
     plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) ->
-      callback null, {address: 'test@test.dev', aliases: "test2@test.dev"}
+      callback null, {email: 'test@test.dev', aliases: "test2@test.dev"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(next).toHaveBeenCalledWith();
@@ -121,7 +121,7 @@ describe "aliases mysql", ->
 
   it "should only call next when query result has a different address", ->
     plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) ->
-      callback null, {address: 'different@test.dev', action: "alias", aliases: "test2@test.dev"}
+      callback null, {email: 'different@test.dev', action: "alias", aliases: "test2@test.dev"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(next).toHaveBeenCalledWith();
@@ -136,7 +136,7 @@ describe "get alias by email", ->
     plugin.config =
       get: jasmine.createSpy('get').andCallFake () ->
         main:
-          query: 'SELECT * FROM aliases WHERE address = "%u"'
+          query: 'SELECT * FROM aliases WHERE email = "%u"'
     connection =
       transaction:
         notes:
@@ -145,7 +145,7 @@ describe "get alias by email", ->
         notes:
           mysql_provider:
             query: jasmine.createSpy('mysql_provider.query').andCallFake (query, callback) ->
-              callback null, [{address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}]
+              callback null, [{email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}]
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
 
@@ -162,7 +162,7 @@ describe "get alias by email", ->
       done()
 
   it "should use configured query", (done) ->
-    expectedQuery = 'SELECT * FROM aliases WHERE address = "test@test.dev"';
+    expectedQuery = 'SELECT * FROM aliases WHERE email = "test@test.dev"';
 
     plugin.getAliasByEmail connection, new Address('test@test.dev'), () ->
       expect(connection.server.notes.mysql_provider.query).toHaveBeenCalledWith(expectedQuery ,jasmine.any(Function));
@@ -197,7 +197,7 @@ describe "get alias by email", ->
 
   it "should call callback with correct results", (done) ->
     plugin.getAliasByEmail connection, new Address('test@test.dev'), (err, result) ->
-      expect(result).toEqual({address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"})
+      expect(result).toEqual({email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"})
       done()
 
   it "should return empty query result", (done) ->
