@@ -266,39 +266,39 @@ Add aliases_mysql into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT email, action, config FROM aliases WHERE email = '%u'
+    query = SELECT action, config FROM aliases WHERE email = '%u'
     
-The query must return the fields email, action and config.
+The query must return the fields action and config.
 
 #### Query Replacements:
 
 %u = entire user@domain
 
-    SELECT email, action, config FROM aliases WHERE email = '%u'
-    -> SELECT email, action, config FROM aliases WHERE email = 'test@test.dev'
+    SELECT action, config FROM aliases WHERE email = '%u'
+    -> SELECT action, config FROM aliases WHERE email = 'test@test.dev'
 
 %n = user part of user@domain
 
-    SELECT email, action, config FROM aliases WHERE user = '%n'
-    -> SELECT email, action, config FROM aliases WHERE user = 'test'
+    SELECT action, config FROM aliases WHERE user = '%n'
+    -> SELECT action, config FROM aliases WHERE user = 'test'
 
 %d = domain part of user@domain
 
-    SELECT email, action, config FROM aliases WHERE domain = '%d'
-    -> SELECT email, action, config FROM aliases WHERE domain = 'test.dev'
+    SELECT action, config FROM aliases WHERE domain = '%d'
+    -> SELECT action, config FROM aliases WHERE domain = 'test.dev'
 
 ### Examples
 
-    {email: "deny@test.dev", action: "drop", config: ""}
+    {action: "drop", config: ""}
     -> denies rcpt
 
-    {email: "deny@test.dev", action: "drop", config: "test2@test.dev"}
+    {action: "drop", config: "test2@test.dev"}
     -> denies rcpt
 
-    {email: "test@test.dev", action: "alias", config: "test2@test.dev"}
+    {action: "alias", config: "test2@test.dev"}
     -> sends email to test2@test.dev
 
-    {email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}
+    {action: "alias", config: "test2@test.dev|test3@test.dev"}
     -> sends email to test2@test.dev and test3@test.dev
 
 ----

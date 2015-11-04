@@ -12,7 +12,7 @@ exports.aliases_mysql = function (next, connection, params) {
 
     var address = params[0];
     this.getAliasByEmail(connection, address, function (error, result) {
-        if (error || !result || !result.action || !result.email || result.email !== address.address()) {
+        if (error || !result || !result.action) {
             if (error) connection.logdebug(exports, "Error: " + error.message);
             return next();
         }

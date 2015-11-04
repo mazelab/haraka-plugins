@@ -35,7 +35,7 @@ describe "aliases mysql", ->
     spyOn(plugin, "alias").andCallFake ->
     spyOn(plugin, "drop").andCallFake ->
     spyOn(plugin, "getAliasByEmail").andCallFake (connection, address, callback) ->
-      return callback null, {email: 'test@test.dev', action: "alias", config: "test2@test.dev"}
+      return callback null, {action: "alias", config: "test2@test.dev"}
     next = jasmine.createSpy('next')
     params = [ new Address('test@test.dev'), {} ]
     connection =
@@ -66,21 +66,21 @@ describe "aliases mysql", ->
     expect(next).toHaveBeenCalledWith();
 
   it "should call 'drop' and next with correct parameters when alias is set to drop", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "drop"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {action: "drop"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(plugin.drop).toHaveBeenCalledWith(connection, params[0].address());
     expect(next).toHaveBeenCalledWith(DENY);
 
   it "should call 'alias' and next with correct parameters when alias is set to alias", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "alias"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {action: "alias"}
 
     plugin.aliases_mysql(next, connection, params);
-    expect(plugin.alias).toHaveBeenCalledWith(connection, params[0].address(), {email: 'test@test.dev', action: "alias"});
+    expect(plugin.alias).toHaveBeenCalledWith(connection, params[0].address(), {action: "alias"});
     expect(next).toHaveBeenCalledWith(OK);
 
   it "should call next when alias action is unknown", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {email: 'test@test.dev', action: "unknown"}
+    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback null, {action: "unknown"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(next).toHaveBeenCalledWith();
@@ -103,25 +103,7 @@ describe "aliases mysql", ->
 
   it "should only call next when query result has no action property", ->
     plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) ->
-      callback null, {email: 'test@test.dev', aliases: "test2@test.dev"}
-
-    plugin.aliases_mysql(next, connection, params);
-    expect(next).toHaveBeenCalledWith();
-    expect(plugin.drop.callCount).toBe(0);
-    expect(plugin.alias.callCount).toBe(0);
-
-  it "should only call next when query result has no address property", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) ->
-      callback null, {action: "alias", aliases: "test2@test.dev"}
-
-    plugin.aliases_mysql(next, connection, params);
-    expect(next).toHaveBeenCalledWith();
-    expect(plugin.drop.callCount).toBe(0);
-    expect(plugin.alias.callCount).toBe(0);
-
-  it "should only call next when query result has a different address", ->
-    plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) ->
-      callback null, {email: 'different@test.dev', action: "alias", aliases: "test2@test.dev"}
+      callback null, {aliases: "test2@test.dev"}
 
     plugin.aliases_mysql(next, connection, params);
     expect(next).toHaveBeenCalledWith();
@@ -145,7 +127,7 @@ describe "get alias by email", ->
         notes:
           mysql_provider:
             query: jasmine.createSpy('mysql_provider.query').andCallFake (query, callback) ->
-              callback null, [{email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}]
+              callback null, [{action: "alias", config: "test2@test.dev|test3@test.dev"}]
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
 
@@ -197,7 +179,7 @@ describe "get alias by email", ->
 
   it "should call callback with correct results", (done) ->
     plugin.getAliasByEmail connection, new Address('test@test.dev'), (err, result) ->
-      expect(result).toEqual({email: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"})
+      expect(result).toEqual({action: "alias", config: "test2@test.dev|test3@test.dev"})
       done()
 
   it "should return empty query result", (done) ->
