@@ -56,7 +56,7 @@ exports.drop = function (connection, rcpt) {
 };
 
 exports.alias = function (connection, rcpt, alias) {
-    if (alias === null || !alias.aliases || alias.aliases.length === 0) {
+    if (alias === null || !alias.config || alias.config.length === 0) {
         connection.loginfo(exports, 'alias failed for ' + rcpt + ', no "to" field in alias config');
         return false;
     }
@@ -64,7 +64,7 @@ exports.alias = function (connection, rcpt, alias) {
     connection.transaction.rcpt_to.pop();
     connection.relaying = true;
 
-    var aliases = alias.aliases.split("|");
+    var aliases = alias.config.split("|");
     for (var index = 0; index < aliases.length; index++) {
         connection.logdebug(exports, "aliasing " + rcpt + " to " + aliases[index]);
         connection.transaction.rcpt_to.push(new Address('<' + aliases[index] + '>'));

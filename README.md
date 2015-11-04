@@ -231,7 +231,7 @@ Aliases can be configured for different actions.
 Available actions:
 
 - drop -> denies rcpt
-- alias -> sends email to all aliases (aliases value)
+- alias -> sends email to all configured aliases (config value)
 
 ### Requirements
 
@@ -252,39 +252,39 @@ Add aliases_mysql into config/plugins
 
 Mysql query Should be configured to suit your environment:
 
-    query = SELECT address, action, aliases FROM aliases WHERE address = '%u'
+    query = SELECT address, action, config FROM aliases WHERE address = '%u'
     
-The query must return the fields address (full email), action (string) and aliases (string).
+The query must return the fields address (string - full email), action (string) and config (string).
 
 #### Query Replacements:
 
 %u = entire user@domain
 
-    SELECT address, action, aliases FROM aliases WHERE address = '%u'
-    -> SELECT address, action, aliases FROM aliases WHERE address = 'test@test.dev'
+    SELECT address, action, config FROM aliases WHERE address = '%u'
+    -> SELECT address, action, config FROM aliases WHERE address = 'test@test.dev'
 
 %n = user part of user@domain
 
-    SELECT address, action, aliases FROM aliases WHERE user = '%n'
-    -> SELECT address, action, aliases FROM aliases WHERE user = 'test'
+    SELECT address, action, config FROM aliases WHERE user = '%n'
+    -> SELECT address, action, config FROM aliases WHERE user = 'test'
 
 %d = domain part of user@domain
 
-    SELECT address, action, aliases FROM aliases WHERE domain = '%d'
-    -> SELECT address, action, aliases FROM aliases WHERE domain = 'test.dev'
+    SELECT address, action, config FROM aliases WHERE domain = '%d'
+    -> SELECT address, action, config FROM aliases WHERE domain = 'test.dev'
 
 ### Examples
 
-    {address: "deny@test.dev", action: "drop", aliases: ""}
+    {address: "deny@test.dev", action: "drop", config: ""}
     -> denies rcpt
 
-    {address: "deny@test.dev", action: "drop", aliases: "test2@test.dev"}
+    {address: "deny@test.dev", action: "drop", config: "test2@test.dev"}
     -> denies rcpt
 
-    {address: "test@test.dev", action: "alias", aliases: "test2@test.dev"}
+    {address: "test@test.dev", action: "alias", config: "test2@test.dev"}
     -> sends email to test2@test.dev
 
-    {address: "test@test.dev", action: "alias", aliases: "test2@test.dev|test3@test.dev"}
+    {address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}
     -> sends email to test2@test.dev and test3@test.dev
 
 ----

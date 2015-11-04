@@ -35,7 +35,7 @@ describe "aliases mysql", ->
     spyOn(plugin, "alias").andCallFake ->
     spyOn(plugin, "drop").andCallFake ->
     spyOn(plugin, "getAliasByEmail").andCallFake (connection, address, callback) ->
-      return callback null, {address: 'test@test.dev', action: "alias", aliases: "test2@test.dev"}
+      return callback null, {address: 'test@test.dev', action: "alias", config: "test2@test.dev"}
     next = jasmine.createSpy('next')
     params = [ new Address('test@test.dev'), {} ]
     connection =
@@ -145,7 +145,7 @@ describe "get alias by email", ->
         notes:
           mysql_provider:
             query: jasmine.createSpy('mysql_provider.query').andCallFake (query, callback) ->
-              callback null, [{address: "test@test.dev", action: "alias", aliases: "test2@test.dev|test3@test.dev"}]
+              callback null, [{address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"}]
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
 
@@ -197,7 +197,7 @@ describe "get alias by email", ->
 
   it "should call callback with correct results", (done) ->
     plugin.getAliasByEmail connection, new Address('test@test.dev'), (err, result) ->
-      expect(result).toEqual({address: "test@test.dev", action: "alias", aliases: "test2@test.dev|test3@test.dev"})
+      expect(result).toEqual({address: "test@test.dev", action: "alias", config: "test2@test.dev|test3@test.dev"})
       done()
 
   it "should return empty query result", (done) ->
@@ -242,17 +242,17 @@ describe "alias", ->
   it "should return false when invalid forwarder object", ->
     expect(plugin.alias connection, 'test@test.dev', null).toBe(false);
     expect(plugin.alias connection, 'test@test.dev', {}).toBe(false);
-    expect(plugin.alias connection, 'test@test.dev', {aliases: []}).toBe(false);
-    expect(plugin.alias connection, 'test@test.dev', {aliases: ""}).toBe(false);
+    expect(plugin.alias connection, 'test@test.dev', {config: []}).toBe(false);
+    expect(plugin.alias connection, 'test@test.dev', {config: ""}).toBe(false);
 
   it "should set add alias targets into transaction.rcpt_to", ->
-    plugin.alias connection, 'test@test.dev', {aliases: "test2@test.dev"}
+    plugin.alias connection, 'test@test.dev', {config: "test2@test.dev"}
     expect(connection.transaction.rcpt_to).toEqual([new Address('<test2@test.dev>')]);
 
   it "should set add alias targets into transaction.rcpt_to", ->
-    plugin.alias connection, 'test@test.dev', {aliases: "test2@test.dev|test3@test.dev"}
+    plugin.alias connection, 'test@test.dev', {config: "test2@test.dev|test3@test.dev"}
     expect(connection.transaction.rcpt_to).toEqual([new Address('<test2@test.dev>'), new Address('<test3@test.dev>')]);
 
   it "should set relaying flag", ->
-    plugin.alias connection, 'test@test.dev', {aliases: "test2@test.dev|test3@test.dev"}
+    plugin.alias connection, 'test@test.dev', {config: "test2@test.dev|test3@test.dev"}
     expect(connection.relaying).toBeTruthy();
