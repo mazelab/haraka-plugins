@@ -175,21 +175,21 @@ describe "query", ->
     plugin = rewire("./mysql_provider.js")
     plugin.__set__ 'exports.connect', jasmine.createSpy('connect').andCallFake (callback) ->
         callback null,
-          query: jasmine.createSpy('connection.query').andCallFake (query, options, callback) -> return callback null, ["something"]
+          query: jasmine.createSpy('connection.query').andCallFake (query, callback) -> return callback null, ["something"]
 
   it "should call connect", (done) ->
-    plugin.query 'query', [], () ->
+    plugin.query 'query', () ->
       expect(plugin.__get__ 'exports.connect').toHaveBeenCalled();
       done()
 
   it "should call query", (done) ->
-    queryCaller = jasmine.createSpy('connection.query').andCallFake (query, options, callback) -> return callback null, true
+    queryCaller = jasmine.createSpy('connection.query').andCallFake (query, callback) -> return callback null, true
 
     plugin.__set__ 'exports.connect', jasmine.createSpy('connect').andCallFake (callback) ->
       callback null,
         query: queryCaller
 
-    plugin.query 'query', [], () ->
+    plugin.query 'query', () ->
       expect(queryCaller).toHaveBeenCalled();
       done()
 
@@ -199,11 +199,11 @@ describe "query", ->
     plugin.__set__ 'exports.connect', jasmine.createSpy('connect').andCallFake (callback) ->
       callback error
 
-    plugin.query 'query', [], (err) ->
+    plugin.query 'query', (err) ->
       expect(err).toBe(error)
       done()
 
   it "should call callback with result", (done) ->
-    plugin.query 'query', [], (err, result) ->
+    plugin.query 'query', (err, result) ->
       expect(result).toEqual(["something"])
       done()

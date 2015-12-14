@@ -54,9 +54,9 @@ exports.connect = function (callback) {
 };
 
 // see mysql query documentation -> params are resolved there
-exports.query = function(query, values, callback) {
+exports.query = function(query, callback) {
     exports.connect(function(err, connection) {
         if(err) return callback(err);
-        connection.query(query, values, callback);
+        connection.query(query, callback);
     });
 };
