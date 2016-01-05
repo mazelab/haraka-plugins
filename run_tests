@@ -28,10 +28,12 @@ var parent = jetpack;
 var harakaDir = jetpack.cwd(process.env.HARAKA);
 var buildDir = parent.dir('.build_test');
 var testDir = parent.cwd('spec');
+var PluginsDir = parent.cwd('plugins');
 
 jetpack.copy(harakaDir.path(), buildDir.path(), {overwrite: true, matching: './*.js'});
 jetpack.copy(testDir.path(), buildDir.path(), {overwrite: true, matching: ['*spec.coffee', '*spec.js']});
-jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./*.js', './package.json']});
+jetpack.copy(PluginsDir.path(), buildDir.path(), {overwrite: true, matching: ['./*.js']});
+jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./package.json']});
 
 var jasmineOptions = {
   specFolders: [ buildDir.path() ],
