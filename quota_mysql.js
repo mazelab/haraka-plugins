@@ -1,7 +1,7 @@
 var DSN = require('./dsn');
 
 exports.register = function () {
-    this.register_hook("rcpt", "quota_mysql");
+    this.register_hook("rcpt_ok", "quota_mysql");
 };
 
 exports.isNumeric = function (n) {
@@ -14,10 +14,10 @@ exports.calcBytesInMegaBytes = function(bytes) {
 };
 
 //@todo only when locally delivered, so not when relayed ????
-exports.quota_mysql = function (next, connection, params) {
-    if (!params || !params[0]) return next();
+exports.quota_mysql = function (next, connection, address) {
+    if (!address) return next();
 
-    this.getUserQuota(connection, params[0], function (err, result) {
+      this.getUserQuota(connection, address, function (err, result) {
         if (err) { // log errors and emails are still allowed
             connection.logerror(exports, "Quota error: " + err);
             return next();
@@ -27,11 +27,11 @@ exports.quota_mysql = function (next, connection, params) {
 
         // check that result values are numeric, skip otherwise
         if (!exports.isNumeric(result.quota) || !exports.isNumeric(result.bytes)) {
-            connection.logalert(exports, "Quota of user ", params[0].address(), " limit=\"" + result.quota + " M\" used=\"" + result.bytes + " bytes\" is not numeric");
+            connection.logalert(exports, "Quota of user ", address.address(), " limit=\"" + result.quota + " M\" used=\"" + result.bytes + " bytes\" is not numeric");
             return next();
         }
 
-        connection.logdebug(exports, "Quota of user ", params[0].address(), " limit=\"" + result.quota + " M\" used=\"" + result.bytes + " bytes\"");
+        connection.logdebug(exports, "Quota of user ", address.address(), " limit=\"" + result.quota + " M\" used=\"" + result.bytes + " bytes\"");
 
         if (exports.calcBytesInMegaBytes(result.bytes) > result.quota) {
             return next(DENY, DSN.mbox_full());

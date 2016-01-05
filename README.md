@@ -35,11 +35,11 @@ A collection of plugins which use the mysql provider for haraka.
     #mail_from.is_resolvable
     
     # RCPT TO
+    aliases_mysql
     rcpt_to.mysql
     
-    # ALIASES
-    # action or change the RCPT address in a number of ways (eg. Forwarder)
-    aliases_mysql
+    # RCPT TO OK
+    # Plugins that run for each accepted rcpt
     quota_mysql
     
     # DATA
@@ -131,7 +131,9 @@ MySQL used char set:
 
 ## MySQL quota
 
-Checks quota against a mysql backend. The query can and should be configured to suit your environment.
+Checks quota against a mysql backend. The query can and should be configured to suit your environment. 
+Please note that the plugin does not calculate the quota value. You need a different service/job for that. 
+Dovecot for example can do that. It is only necessary to write the into the bytes table of the mysql backend. 
 
 Behavior:
 
@@ -147,14 +149,14 @@ Behavior:
 
 ### Installation
 
-Install the mysql provider plugin if not present
+Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
 - quota_mysql.js > plugins/quota_mysql.js
 - config/quota_mysql.ini > config/quota_mysql.ini 
 
-Add quota_mysql into config/plugins
+Add quota_mysql into config/plugins.
 
 ### Configuration config/quota_mysql.ini
 
@@ -181,9 +183,14 @@ The query must return the fields quota (in MiB) and bytes (in B).
     SELECT quota, bytes FROM users WHERE domain = '%d'
     -> SELECT quota, bytes FROM users WHERE domain = 'test.dev'
 
+#### Hooks
+
+- rcpt_ok
+
 #### Limitations
 
 - To keep the mysql query as dynamical as it is we decided to only accept the full email as the authorization user
+- The plugin does not calculate the quota value iself. So a additional service/job is necessary for that.
 
 ----
 
@@ -199,7 +206,7 @@ The authorization will only be enabled when using tls or using a local ip addres
 
 ### Installation
 
-Install the mysql provider plugin if not present
+Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
@@ -207,7 +214,7 @@ Copy the following files into your haraka instance:
 - cryptmd5.js > plugins/auth/cryptmd5.js
 - config/auth_mysql_cryptmd5.ini > config/auth_mysql_cryptmd5.ini
 
-Add auth/mysql_cryptmd5 into config/plugins
+Add auth/mysql_cryptmd5 into config/plugins.
 
 ### Configuration config/auth_mysql_cryptmd5.ini
 
@@ -234,6 +241,10 @@ The query must return the field password (cram md5).
     SELECT password FROM users WHERE domain = '%d'
     -> SELECT password FROM users WHERE domain = 'test.dev'
 
+#### Hooks
+
+- capabilites
+
 ----
 
 ## MySQL aliases
@@ -253,14 +264,14 @@ Available actions:
 
 ### Installation
 
-Install the mysql provider plugin if not present
+Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
 - aliases_mysql.js > plugins/aliases_mysql.js
 - config/aliases_mysql.ini > config/aliases_mysql.ini
 
-Add aliases_mysql into config/plugins
+Add aliases_mysql into config/plugins as first rcpt to to entry (see example top).
 
 ### Configuration config/aliases_mysql.ini
 
@@ -301,6 +312,10 @@ The query must return the fields action and config.
     {action: "alias", config: "test2@test.dev|test3@test.dev"}
     -> sends email to test2@test.dev and test3@test.dev
 
+#### Hooks
+
+- rcpt
+
 ----
 
 ## MySQL rcpt to
@@ -314,14 +329,14 @@ Accepts rcpt_to if mysql returned a value.
 
 ### Installation
 
-Install the mysql provider plugin if not present
+Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
 - rcpt_to.mysql.js > plugins/rcpt_to.mysql.js
 - config/rcpt_to.mysql.ini > config/rcpt_to.mysql.ini
 
-Add rcpt_to.mysql into config/plugins
+Add rcpt_to.mysql into config/plugins.
 
 ### Configuration config/rcpt_to.mysql.ini
 
@@ -348,3 +363,6 @@ The query must return any value.
     query = SELECT email FROM users WHERE domain = '%d'
     -> SELECT email FROM users WHERE domain = 'test.dev'
 
+#### Hooks
+
+- rcpt

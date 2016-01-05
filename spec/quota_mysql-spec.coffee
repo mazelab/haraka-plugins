@@ -7,7 +7,7 @@ params =
 connection =
 next =
 
-describe "hook mail", ->
+describe "register", ->
 
   beforeEach ->
     plugin = rewire("./quota_mysql.js");
@@ -15,7 +15,7 @@ describe "hook mail", ->
 
   it 'should register hook for rcpt with quota_mysql', () ->
     plugin.register();
-    expect(plugin.register_hook).toHaveBeenCalledWith('rcpt', 'quota_mysql');
+    expect(plugin.register_hook).toHaveBeenCalledWith('rcpt_ok', 'quota_mysql');
 
 
 describe "is numeric", ->
@@ -60,7 +60,7 @@ describe "quota mysql", ->
       callback null, {quota: 50, bytes: 1000000000}
     spyOn(plugin, "isNumeric").andCallThrough()
     spyOn(plugin, "calcBytesInMegaBytes").andCallThrough()
-    params = [ new Address('test@test.dev'), {} ]
+    params = new Address('test@test.dev')
     next = jasmine.createSpy('next')
     connection =
       logdebug: () -> jasmine.createSpy('logdebug')
@@ -70,7 +70,7 @@ describe "quota mysql", ->
       logalert: () -> jasmine.createSpy('logalert')
 
   it "should call only next without correct params", ->
-    plugin.quota_mysql next, connection, []
+    plugin.quota_mysql next, connection
 
     expect(next).toHaveBeenCalledWith()
     expect(plugin.getUserQuota.callCount).toBe(0)
@@ -78,7 +78,7 @@ describe "quota mysql", ->
   it "should call getUserQuota with correct params", ->
     plugin.quota_mysql next, connection, params
 
-    expect(plugin.getUserQuota).toHaveBeenCalledWith(connection, params[0], jasmine.any(Function))
+    expect(plugin.getUserQuota).toHaveBeenCalledWith(connection, params, jasmine.any(Function))
 
   it "should call next on query error", ->
     plugin.getUserQuota.andCallFake (connection, params, callback) ->
