@@ -6,8 +6,6 @@ exports.register = function () {
 };
 
 exports.aliases_mysql = function (next, connection, params) {
-    //@todo why connection.transaction.notes.local_sender ???
-    //if (!connection.transaction.notes.local_sender || !params || !params[0]) return next();
     if (!params || !params[0]) return next();
 
     var address = params[0];

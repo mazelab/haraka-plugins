@@ -50,15 +50,6 @@ describe "aliases mysql", ->
     plugin.aliases_mysql(next, connection, params);
     expect(plugin.getAliasByEmail).toHaveBeenCalledWith(connection, params[0], jasmine.any(Function));
 
-# @todo check for local_sender flag
-#  it "should not call 'getAliasByEmail' but call next function when no local_sender flag", ->
-#    testConnection = connection
-#    testConnection.transaction.notes.local_sender = false
-#
-#    plugin.aliases_mysql(next, connection, params);
-#    expect(next).toHaveBeenCalled();
-#    expect(plugin.getAliasByEmail.wasCalled).toBeFalsy();
-
   it "should call next when 'getAliasByEmail' fails", ->
     plugin.getAliasByEmail.andCallFake (connection, rcpt, callback) -> callback new Error 'failed'
 
