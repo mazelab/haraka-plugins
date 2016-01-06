@@ -7,7 +7,7 @@ var jasmine = require('jasmine-node');
 
 process.env.HARAKA = path.dirname(require.resolve("Haraka"));
 
-if (! process.env.HARAKA) {
+if (!process.env.HARAKA) {
   console.log('Haraka installation not found. Try npm install');
   return false;
 }
@@ -36,7 +36,7 @@ jetpack.copy(PluginsDir.path(), buildDir.path(), {overwrite: true, matching: ['.
 jetpack.copy(parent.path(), buildDir.path(), {overwrite: true, matching: ['./package.json']});
 
 var jasmineOptions = {
-  specFolders: [ buildDir.path() ],
+  specFolders: [buildDir.path()],
   isVerbose: false,
   showColors: true,
   teamcity: false,
@@ -54,7 +54,7 @@ var jasmineOptions = {
 
 var exitCode = 0;
 
-jasmineOptions.onComplete = function(runner) {
+jasmineOptions.onComplete = function (runner) {
   jetpack.remove(buildDir.path());
   if (runner.results().failedCount != 0) {
     exitCode = 1;
@@ -64,7 +64,7 @@ jasmineOptions.onComplete = function(runner) {
 
 try {
   require('coffee-script/register'); // support CoffeeScript >=1.7.0
-} catch ( e ) {
+} catch (e) {
   require('coffee-script'); // support CoffeeScript <=1.6.3
 }
 
