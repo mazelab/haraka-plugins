@@ -13,11 +13,11 @@ exports.calcBytesInMegaBytes = function(bytes) {
     return (bytes / 1048576).toFixed(1);
 };
 
-//@todo only when locally delivered, so not when relayed ????
 exports.quota_mysql = function (next, connection, address) {
-    if (!address) return next();
+    //only check quota on local delivery
+    if (!address || connection.relaying) return next();
 
-      this.getUserQuota(connection, address, function (err, result) {
+    this.getUserQuota(connection, address, function (err, result) {
         if (err) { // log errors and emails are still allowed
             connection.logerror(exports, "Quota error: " + err);
             return next();

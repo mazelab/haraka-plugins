@@ -63,14 +63,22 @@ describe "quota mysql", ->
     params = new Address('test@test.dev')
     next = jasmine.createSpy('next')
     connection =
+      relaying: false
       logdebug: () -> jasmine.createSpy('logdebug')
       loginfo: () -> jasmine.createSpy('loginfo')
       logwarn: () -> jasmine.createSpy('logwarn')
       logerror: () -> jasmine.createSpy('logerror')
       logalert: () -> jasmine.createSpy('logalert')
 
-  it "should call only next without correct params", ->
+  it "should only call next without address", ->
     plugin.quota_mysql next, connection
+
+    expect(next).toHaveBeenCalledWith()
+    expect(plugin.getUserQuota.callCount).toBe(0)
+
+  it "should only call next when connection is relaying", ->
+    connection.relaying = true
+    plugin.quota_mysql next, connection, params
 
     expect(next).toHaveBeenCalledWith()
     expect(plugin.getUserQuota.callCount).toBe(0)
