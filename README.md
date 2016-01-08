@@ -3,6 +3,55 @@ Haraka plugins
 
 [![Build Status](https://travis-ci.org/mazelab/haraka-plugins.svg)](https://travis-ci.org/mazelab/haraka-plugins)
 
+# Dovecot Modules
+
+A collection of plugins which uses dovecot as backend.
+
+## Dovecot deliverable rcpt to
+
+Checks rcpt_to entries against dovecot auth-master service.
+ 
+Original code from [https://github.com/Dexus/haraka-plugin-dovecot](https://github.com/Dexus/haraka-plugin-dovecot).
+
+### Requirements
+
+- dovecot auth-master process through socket or host and port
+
+### Installation
+
+Copy the following files into your haraka instance:
+
+- plugins/rcpt_to.dovecot_deliverable.js > plugins/rcpt_to.dovecot_deliverable.js
+- config/rcpt_to.dovecot_deliverable.ini > config/rcpt_to.dovecot_deliverable.ini
+
+Add rcpt_to.dovecot_deliverable into config/plugins.
+
+### Configuration config/rcpt_to.dovecot_deliverable.ini
+
+````
+path=/var/run/dovecot/auth-master
+````
+
+Path to dovecot/auth-master. When path is uncommented it is used by default and the host/port config will never be used.
+default: path=/var/run/dovecot/auth-master
+
+````
+host=127.0.0.1
+````
+
+The IP address of the host running dovecot for delivery
+
+````
+port=8998
+````
+
+The TCP port dovecot is listening on, to check user against service auth -> inet_listener in your dovecot config
+
+
+#### Hooks
+
+- rcpt
+
 # MySQL modules
 
 A collection of plugins which use the mysql provider for haraka.
@@ -36,6 +85,7 @@ A collection of plugins which use the mysql provider for haraka.
     
     # RCPT TO
     aliases_mysql
+    rcpt_to.dovecot_deliverable
     rcpt_to.mysql
     
     # RCPT TO OK
@@ -84,7 +134,7 @@ Install mysql in your haraka instance:
 
 Copy the following files into your haraka instance:
 
-- mysql_provider.js > plugins/mysql_provider.js
+- plugins/mysql_provider.js > plugins/mysql_provider.js
 - config/mysql_provider.ini > config/mysql_provider.ini 
 
 Add mysql_provider into config/plugins
@@ -153,7 +203,7 @@ Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
-- quota_mysql.js > plugins/quota_mysql.js
+- plugins/quota_mysql.js > plugins/quota_mysql.js
 - config/quota_mysql.ini > config/quota_mysql.ini 
 
 Add quota_mysql into config/plugins.
@@ -210,8 +260,8 @@ Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
-- auth_mysql_cryptmd5.js > plugins/auth/mysql_cryptmd5.js
-- cryptmd5.js > plugins/auth/cryptmd5.js
+- plugins/auth_mysql_cryptmd5.js > plugins/auth/mysql_cryptmd5.js
+- plugins/cryptmd5.js > plugins/auth/cryptmd5.js
 - config/auth_mysql_cryptmd5.ini > config/auth_mysql_cryptmd5.ini
 
 Add auth/mysql_cryptmd5 into config/plugins.
@@ -268,7 +318,7 @@ Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
-- aliases_mysql.js > plugins/aliases_mysql.js
+- plugins/aliases_mysql.js > plugins/aliases_mysql.js
 - config/aliases_mysql.ini > config/aliases_mysql.ini
 
 Add aliases_mysql into config/plugins as first rcpt to to entry (see example top).
@@ -333,7 +383,7 @@ Install the mysql provider plugin if not present.
 
 Copy the following files into your haraka instance:
 
-- rcpt_to.mysql.js > plugins/rcpt_to.mysql.js
+- plugins/rcpt_to.mysql.js > plugins/rcpt_to.mysql.js
 - config/rcpt_to.mysql.ini > config/rcpt_to.mysql.ini
 
 Add rcpt_to.mysql into config/plugins.
